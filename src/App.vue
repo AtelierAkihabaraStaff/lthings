@@ -42,7 +42,7 @@ export default Vue.extend({
     name: "home",
     data() {
         return {
-            USER_SERVICE_UUID: "7c6e60c3-e913-4a75-8456-e0b427200a6e",
+            USER_SERVICE_UUID: "28074804-781c-4c26-8783-24dabfa139a1",
             LED_CHARACTERISTIC_UUID: "E9062E71-9E62-4BC6-B0D3-35CDCD9B027B",
             SLACK_WEBHOOK_URL: "",
             bleConnect: false,
