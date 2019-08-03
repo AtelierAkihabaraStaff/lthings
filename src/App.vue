@@ -13,15 +13,19 @@
                                     <div class="field is-grouped">
                                         <button
                                             class="button is-info is-focused control"
-                                            @click="enter"
+                                            @click="startWork"
                                         >出勤</button>
                                         <button
                                             class="button is-success is-focused control"
-                                            @click="rest"
+                                            @click="startRest"
                                         >休憩</button>
                                         <button
+                                            class="button is-warning is-focused control"
+                                            @click="finishRest"
+                                        >戻り</button>
+                                        <button
                                             class="button is-primary is-focused control"
-                                            @click="leave"
+                                            @click="finishWork"
                                         >退勤</button>
                                     </div>
                                 </div>
@@ -37,26 +41,59 @@
 <script>
 import Vue from "vue";
 import "bulma/css/bulma.css";
+import axios from 'axios';
+import { Promise } from "q";
 
 export default Vue.extend({
     name: "home",
     data() {
         return {
-            USER_SERVICE_UUID: "28074804-781c-4c26-8783-24dabfa139a1",
+            USER_SERVICE_UUID: "b7ea8954-0def-4aca-851e-612dc2d6ce2e",
             LED_CHARACTERISTIC_UUID: "E9062E71-9E62-4BC6-B0D3-35CDCD9B027B",
-            SLACK_WEBHOOK_URL: "",
             bleConnect: false,
             bleStatus: "Await Connecting A Device...",
-            members: {
-                kawase: ""
-            }
+            userId: null
         };
     },
     methods: {
-        async slackPost() {},
+        async slackPost(text) {
+            try {
+                const options = {
+                    method: 'post',
+                    baseURL: 'https://hooks.slack.com/services/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',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    data: {
+                        text: text
+                    }
+                }
+                await axios.request(options);
+            } catch(e) {
+                alert('エラーが発生しました。', e);
+            }
+        },
+        async spreadsheetPost(text) {
+            try {
+                const options = {
+                    method: 'post',
+                    baseURL: 'https://script.google.com/macros/s/AKfycbxHZl43hpSYjynZAUnnA7IYpV2mO3B_eFGkhVLtqYOo-5T-uXOE/exec',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                    data: {
+                        id: this.userId,
+                        text: text
+                    }
+                }
+                await axios.request(options);
+            } catch(e) {
+                alert('エラーが発生しました。', e);
+            }
+        },
         async liffCheckAvailabilityAndDo(callback) {
             try {
-                const isAbailable = await window.liff.bluetooth.getAvailability();
+                const isAbailable = await liff.bluetooth.getAvailability();
                 if (isAbailable) {
                     callback();
                 } else {
@@ -71,7 +108,7 @@ export default Vue.extend({
             }
         },
         async liffRequestDevice() {
-            const device = await window.liff.bluetooth.requestDevice();
+            const device = await liff.bluetooth.requestDevice();
             await device.gatt.connect();
             // const service = await device.gatt.getPrimaryService(this.USER_SERVICE_UUID)
             // window.ledCharacteristic = await service.getCharacteristic(this.LED_CHARACTERISTIC_UUID)
@@ -79,27 +116,50 @@ export default Vue.extend({
             this.bleStatus = "Connected to the device.";
         },
         async initializeLiff() {
-            await window.liff.initPlugins(["bluetooth"]);
+            await liff.initPlugins(["bluetooth"]);
             this.liffCheckAvailabilityAndDo(() => this.liffRequestDevice());
-            const profile = await window.liff.getProfile();
-            // TODO
+            const profile = await liff.getProfile();
+            this.userId = profile.userId;
         },
-        canUseLiff() {
-            return navigator.userAgent.indexOf("Line") !== -1 && window.liff;
+        async startWork() {
+            if (!this.userId) {
+                alert('user not found.');
+                return;
+            };
+            Promise.all([this.slackPost(`${this.userId}が出勤しました。`), this.spreadsheetPost('startWork')]).then((res) => {
+                alert('出勤しました。', res);
+            });
         },
-        enter() {
-            alert("enter");
+        async startRest() {
+            if (!this.userId) {
+                alert('user not found.');
+                return;
+            };
+            Promise.all([this.slackPost(`${this.userId}が休憩に入りました。`), this.spreadsheetPost('startRest')]).then((res) => {
+                alert('休憩に入りました。', res);
+            });
         },
-        rest() {
-            alert("rest");
+        async finishRest() {
+            if (!this.userId) {
+                alert('user not found.');
+                return;
+            }
+            Promise.all([this.slackPost(`${this.userId}が休憩から戻りました。`), this.spreadsheetPost('finishRest')]).then((res) => {
+                alert('休憩から戻りました。', res);
+            });
         },
-        leave() {
-            alert("leave");
+        async finishWork() {
+            if (!this.userId) {
+                alert('user not found.');
+                return;
+            };
+            Promise.all([this.slackPost(`${this.userId}が退勤しました。`), this.spreadsheetPost('finishWork')]).then((res) => {
+                alert('退勤しました。', res);
+            });
         }
     },
     mounted() {
-        if (!this.canUseLiff()) alert('can not use.'); return;
-        window.liff.init(
+        liff.init(
             () => this.initializeLiff(),
             error => (location.href = "https://google.co.jp")
         );
