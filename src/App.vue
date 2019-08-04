@@ -62,8 +62,7 @@ export default Vue.extend({
             bleConnect: false,
             bleStatus: "Await Connecting A Device...",
             userId: null,
-            loading: false,
-            isDebug: true
+            loading: false
         };
     },
     methods: {
@@ -133,7 +132,7 @@ export default Vue.extend({
             this.userId = profile.userId;
         },
         async post(text, status) {
-            if (!this.userId && !this.isDebug) {
+            if (!this.userId) {
                 alert('User not found.');
                 return;
             };
