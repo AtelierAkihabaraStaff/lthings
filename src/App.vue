@@ -1,31 +1,40 @@
 <template>
     <div class="section">
+        <div class="pageloader"></div>
         <div class="container">
             <div class="tile is-ancestor">
                 <div class="tile is-vertical is-1">
                     <div class="tile">
                         <div class="tile is-partent is-vertical">
                             <article class='tile is-child notification is-info'>
-                                <p class='title'>出勤退勤休憩</p>
+                                <p class='title'>アトリエ秋葉原勤怠</p>
                             </article>
                             <article class="tile is-child notification is-danger">
                                 <div class="column is-half">
                                     <div class="field is-grouped">
                                         <button
                                             class="button is-info is-focused control"
+                                            :class="{'is-loading': this.loading}"
                                             @click="startWork"
+                                            :disabled="loading"
                                         >出勤</button>
                                         <button
                                             class="button is-success is-focused control"
+                                            :class="{'is-loading': this.loading}"
                                             @click="startRest"
+                                            :disabled="loading"
                                         >休憩</button>
                                         <button
                                             class="button is-warning is-focused control"
+                                            :class="{'is-loading': this.loading}"
                                             @click="finishRest"
+                                            :disabled="loading"
                                         >戻り</button>
                                         <button
                                             class="button is-primary is-focused control"
+                                            :class="{'is-loading': this.loading}"
                                             @click="finishWork"
+                                            :disabled="loading"
                                         >退勤</button>
                                     </div>
                                 </div>
@@ -52,7 +61,9 @@ export default Vue.extend({
             LED_CHARACTERISTIC_UUID: "E9062E71-9E62-4BC6-B0D3-35CDCD9B027B",
             bleConnect: false,
             bleStatus: "Await Connecting A Device...",
-            userId: null
+            userId: null,
+            loading: false,
+            isDebug: true
         };
     },
     methods: {
@@ -121,41 +132,38 @@ export default Vue.extend({
             const profile = await liff.getProfile();
             this.userId = profile.userId;
         },
-        async startWork() {
-            if (!this.userId) {
-                alert('user not found.');
+        async post(text, status) {
+            if (!this.userId && !this.isDebug) {
+                alert('User not found.');
                 return;
             };
-            Promise.all([this.slackPost(`${this.userId}が出勤しました。`), this.spreadsheetPost('startWork')]).then((res) => {
-                alert('出勤しました。', res);
-            });
+            this.loading = true;
+            Promise.all([this.slackPost(`${this.userId}が${text}`), this.spreadsheetPost(status)])
+            .then((res) => {
+                alert(text, res);
+            })
+            .catch((e) => alert('失敗しました。', e))
+            .finally(() => this.loading = false);
+        },
+        async startWork() {
+            const text = '出勤しました。';
+            const status = 'startWork';
+            await this.post(text, status);
         },
         async startRest() {
-            if (!this.userId) {
-                alert('user not found.');
-                return;
-            };
-            Promise.all([this.slackPost(`${this.userId}が休憩に入りました。`), this.spreadsheetPost('startRest')]).then((res) => {
-                alert('休憩に入りました。', res);
-            });
+            const text = '休憩に入りました。';
+            const status = 'startRest';
+            await this.post(text, status);
         },
         async finishRest() {
-            if (!this.userId) {
-                alert('user not found.');
-                return;
-            }
-            Promise.all([this.slackPost(`${this.userId}が休憩から戻りました。`), this.spreadsheetPost('finishRest')]).then((res) => {
-                alert('休憩から戻りました。', res);
-            });
+            const text = '休憩から戻りました。';
+            const status = 'finishRest';
+            await this.post(text, status);
         },
         async finishWork() {
-            if (!this.userId) {
-                alert('user not found.');
-                return;
-            };
-            Promise.all([this.slackPost(`${this.userId}が退勤しました。`), this.spreadsheetPost('finishWork')]).then((res) => {
-                alert('退勤しました。', res);
-            });
+            const text = '退勤しました。';
+            const status = 'finishWork';
+            await this.post(text, status);
         }
     },
     mounted() {
