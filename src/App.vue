@@ -1,6 +1,5 @@
 <template>
     <div class="section">
-        <div class="pageloader"></div>
         <div class="container">
             <div class="tile is-ancestor">
                 <div class="tile is-vertical is-1">
