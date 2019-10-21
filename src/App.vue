@@ -69,7 +69,8 @@ export default Vue.extend({
             try {
                 const options = {
                     method: 'post',
-                    baseURL: 'https://hooks.slack.com/services/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',
+                    //baseURL: 'https://hooks.slack.com/services/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',
+                    baseURL: 'https://hooks.slack.com/services/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'
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
                     },
